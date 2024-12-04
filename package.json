@@ -1,0 +1,26 @@
+{
+    "name": "com.hakoniwa-lab.hakoniwa-sim",
+    "version": "1.0.0",
+    "displayName": "Hakoniwa Simulation",
+    "description": "This package provides a Hakoniwa Simulation for Unity.",
+    "unity": "2022.3",
+    "author": {
+      "name": "Takashi Mori",
+      "email": "tmori@hakoniwa-lab.net",
+      "url": "https://hakoniwa-lab.net"
+    },
+    "license": "MIT",
+    "dependencies": {
+      "com.unity.nuget.newtonsoft-json": "3.0.2"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/toppers/hakoniwa-sim-csharp.git"
+    },
+    "keywords": [
+      "PDU",
+      "Unity",
+      "Communication",
+      "Hakoniwa"
+    ]
+}
