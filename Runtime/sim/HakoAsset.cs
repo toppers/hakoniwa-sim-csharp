@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace hakoniwa.sim.core
 {
-    public class HakoAsset: MonoBehaviour, IHakoPdu
+    public class HakoAsset: MonoBehaviour, IHakoPdu, IHakoControl
     {
         private static HakoAsset Instance { get; set; }
 
@@ -143,15 +143,7 @@ namespace hakoniwa.sim.core
                 return false;
             }
             int channel_id = GetPduManager().GetChannelId(robotName, pduName);
-            if (channel_id < 0)
-            {
-                return false;
-            }
             int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
-            if (pdu_size < 0)
-            {
-                return false;
-            }
             return srv.DeclarePduForWrite(robotName, pduName, channel_id, pdu_size);
         }
 
@@ -163,16 +155,38 @@ namespace hakoniwa.sim.core
                 return false;
             }
             int channel_id = GetPduManager().GetChannelId(robotName, pduName);
-            if (channel_id < 0)
-            {
-                return false;
-            }
             int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
-            if (pdu_size < 0)
-            {
-                return false;
-            }
             return srv.DeclarePduForRead(robotName, pduName, channel_id, pdu_size);
+        }
+
+        public long GetWorldTime()
+        {
+            return hakoCommand.GetWorldTime();
+        }
+
+        public HakoState GetState()
+        {
+            SimulationState state = hakoCommand.GetState();
+            if (Enum.IsDefined(typeof(HakoState), state))
+            {
+                return (HakoState)state;
+            }
+            throw new Exception("internal error. enum type is mismatch: SimulationState is not equal HakoState");
+        }
+
+        public bool SimulationStart()
+        {
+            return hakoCommand.SimulationStart();
+        }
+
+        public bool SimulationStop()
+        {
+            return hakoCommand.SimulationStop();
+        }
+
+        public bool SimulationReset()
+        {
+            return hakoCommand.SimulationReset();
         }
     }
 }
