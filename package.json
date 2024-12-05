@@ -11,7 +11,8 @@
     },
     "license": "MIT",
     "dependencies": {
-      "com.unity.nuget.newtonsoft-json": "3.0.2"
+      "com.unity.nuget.newtonsoft-json": "3.0.2",
+      "com.hakoniwa-lab.hakoniwa-pdu": "https://github.com/toppers/hakoniwa-pdu-csharp.git"
     },
     "repository": {
       "type": "git",
