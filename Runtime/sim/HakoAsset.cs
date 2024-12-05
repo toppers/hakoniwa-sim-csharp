@@ -13,7 +13,7 @@ namespace hakoniwa.sim.core
         [SerializeField]
         private string assetName = "UnityAsset";
         [SerializeField]
-        private string pduConfigPath;
+        private string pduConfigPath = ".";
 
         [SerializeField]
         private GameObject[] hakoObjects;
