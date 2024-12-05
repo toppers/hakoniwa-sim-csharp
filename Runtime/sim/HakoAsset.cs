@@ -44,6 +44,10 @@ namespace hakoniwa.sim.core
         {
             return Instance;
         }
+        public static IHakoControl GetHakoControl()
+        {
+            return Instance;
+        }
         private bool HakoAssetIsValid(List<IHakoObject> hakoObectList)
         {
             foreach (var obj in hakoObjects)
