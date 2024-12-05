@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using hakoniwa.environment.interfaces;
+using hakoniwa.pdu.interfaces;
 
 namespace hakoniwa.sim.core
 {
@@ -7,8 +10,10 @@ namespace hakoniwa.sim.core
     public interface IHakoAsset
     {
         bool Initialize(List<IHakoObject> hakoObectList);
-        bool RegisterOnHakoniwa();
-        bool UnRegisterOnHakoniwa();
+        Task<bool> RegisterOnHakoniwa();
+        Task<bool> UnRegisterOnHakoniwa();
         bool Execute();
+        IPduManager GetPduManager();
+        IHakoCommunicationService GetHakoCommunicationService();
     }
 }

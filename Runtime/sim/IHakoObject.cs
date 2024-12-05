@@ -5,6 +5,7 @@ namespace hakoniwa.sim
 {
     public interface IHakoObject
     {
+        void EventInitialize();
         void EventStart();
         void EventStop();
         void EventReset();

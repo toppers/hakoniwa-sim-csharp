@@ -2,6 +2,11 @@
 using static hakoniwa.sim.core.impl.HakoCppWrapper;
 using System;
 using System.Collections.Generic;
+using hakoniwa.environment.interfaces;
+using hakoniwa.environment.impl;
+using hakoniwa.pdu.interfaces;
+using hakoniwa.pdu.core;
+using System.Threading.Tasks;
 #if UNITY_EDITOR
 using UnityEngine;
 #endif
@@ -11,21 +16,39 @@ namespace hakoniwa.sim.core.impl
     public class HakoAssetImpl : IHakoAsset, IHakoCommand
     {
         private string my_asset_name;
+        private string pduConfigPath;
         private long asset_time_usec = 0;
         private long delta_time_usec;
         private bool isReady = false;
         private List<IHakoObject> hakoObectList;
+        private IPduManager pduManager;
+        private IEnvironmentService hako_service;
+        private IHakoCommunicationService hako_pdu;
 
 
-        public HakoAssetImpl(string asset_name, long d_time_usec)
+        public HakoAssetImpl(string asset_name, long d_time_usec, string pdu_config_path)
         {
             my_asset_name = asset_name;
             delta_time_usec = d_time_usec;
+            pduConfigPath = pdu_config_path;
         }
         public bool Initialize(List<IHakoObject> list)
         {
             hakoObectList = list;
             isReady = HakoCppWrapper.asset_init();
+            if (isReady)
+            {
+                hako_service = HakoEnvironmentServiceFactory.Create(my_asset_name);
+                if (hako_service.GetCommunication() is IHakoCommunicationService)
+                {
+                    hako_pdu = (IHakoCommunicationService)hako_service.GetCommunication();
+                }
+                else
+                {
+                    throw new Exception("Can not cast IHakoCommunicationService");
+                }
+                pduManager = new PduManager(hako_service, pduConfigPath);
+            }
             return isReady;
         }
 
@@ -105,6 +128,7 @@ namespace hakoniwa.sim.core.impl
                     //Debug.Log($"Can not do simulation because world time is slow... asset_time={asset_time_usec} world_time={world_time}");
                     return false;
                 }
+                hako_pdu.EventTick();
                 foreach (var obj in hakoObectList)
                 {
                     obj.EventTick();
@@ -147,22 +171,41 @@ namespace hakoniwa.sim.core.impl
         }
 
 
-        bool IHakoAsset.RegisterOnHakoniwa()
+        public async Task<bool> RegisterOnHakoniwa()
         {
             if (isReady)
             {
-                isReady = HakoCppWrapper.asset_register_polling(my_asset_name);
+                var ret = await pduManager.StartService();
+                if (ret)
+                {
+                    isReady = HakoCppWrapper.asset_register_polling(my_asset_name);
+#if UNITY_EDITOR
+                    Debug.Log($"asset register result({isReady}): {my_asset_name}");
+#endif
+                }
+                else
+                {
+                    isReady = false;
+#if UNITY_EDITOR
+                    Debug.LogError($"pduManager StartService error: {my_asset_name}");
+#endif
+                }
             }
             return isReady;
         }
 
-        bool IHakoAsset.UnRegisterOnHakoniwa()
+        public Task<bool> UnRegisterOnHakoniwa()
         {
             if (isReady)
             {
-                return HakoCppWrapper.asset_unregister(my_asset_name);
+                var ret = pduManager.StopService();
+                if (ret == false)
+                {
+                    //TODO ERROR LOG
+                }
+                return Task.FromResult<bool>(HakoCppWrapper.asset_unregister(my_asset_name));
             }
-            return false;
+            return Task.FromResult<bool>(false);
         }
         public long GetWorldTime()
         {
@@ -199,6 +242,24 @@ namespace hakoniwa.sim.core.impl
                 return HakoCppWrapper.simevent_reset();
             }
             return false;
+        }
+
+        public IPduManager GetPduManager()
+        {
+            if (isReady)
+            {
+                return pduManager;
+            }
+            return null;
+        }
+
+        public IHakoCommunicationService GetHakoCommunicationService()
+        {
+            if (isReady)
+            {
+                return hako_pdu;
+            }
+            return null;
         }
     }
 }

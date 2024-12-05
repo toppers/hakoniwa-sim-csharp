@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using hakoniwa.pdu.interfaces;
 using hakoniwa.sim.core.impl;
 using UnityEngine;
 
 namespace hakoniwa.sim.core
 {
-    public class HakoAsset: MonoBehaviour
+    public class HakoAsset: MonoBehaviour, IHakoPdu
     {
+        private static HakoAsset Instance { get; set; }
+
         [SerializeField]
         private string assetName = "UnityAsset";
+        [SerializeField]
+        private string pduConfigPath;
 
         [SerializeField]
         private GameObject[] hakoObjects;
@@ -23,6 +28,22 @@ namespace hakoniwa.sim.core
         private IHakoAsset hakoAsset;
         private IHakoCommand hakoCommand;
 
+        private void Awake()
+        {
+            // シングルトンのセットアップ
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject); // 他のインスタンスが存在する場合は破棄
+                return;
+            }
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // シーンをまたいでも破棄されない
+        }
+        public static IHakoPdu GetHakoPdu()
+        {
+            return Instance;
+        }
         private bool HakoAssetIsValid(List<IHakoObject> hakoObectList)
         {
             foreach (var obj in hakoObjects)
@@ -43,7 +64,7 @@ namespace hakoniwa.sim.core
         }
 
 
-        void Start()
+        async void Start()
         {
             var hakoObectList = new List<IHakoObject>();
             if (!HakoAssetIsValid(hakoObectList))
@@ -54,13 +75,12 @@ namespace hakoniwa.sim.core
 
             long delta_time = (long)Math.Round((double)Time.fixedDeltaTime * 1000000.0f);
 
-            hakoAsset = new HakoAssetImpl(assetName, delta_time);
+            hakoAsset = new HakoAssetImpl(assetName, delta_time, pduConfigPath);
             hakoCommand = (IHakoCommand)hakoAsset;
             if (hakoAsset.Initialize(hakoObectList))
             {
                 Debug.Log("OK: Initialize Hakoniwa");
-                bool ret = hakoAsset.RegisterOnHakoniwa();
-                //bool ret = false;
+                bool ret = await hakoAsset.RegisterOnHakoniwa();
                 if (ret)
                 {
                     Debug.Log("OK: Register on Hakoniwa: " + assetName);
@@ -70,6 +90,10 @@ namespace hakoniwa.sim.core
                 else
                 {
                     Debug.LogError("Can not register on Hakoniwa: " + assetName);
+                }
+                foreach (var ihako in hakoObectList)
+                {
+                    ihako.EventInitialize();
                 }
             }
             else
@@ -95,16 +119,44 @@ namespace hakoniwa.sim.core
                 Debug.Log("Can not execute simulation: " + hakoCommand.GetState());
             }
         }
-        void OnApplicationQuit()
+        async void OnApplicationQuit()
         {
             Debug.Log("OnApplicationQuit");
             if (hakoAsset != null && isReady)
             {
-                bool ret = hakoAsset.UnRegisterOnHakoniwa();
+                bool ret = await hakoAsset.UnRegisterOnHakoniwa();
                 isReady = false;
                 Debug.Log($"OK: Unregister from Hakoniwa: {assetName} ret: {ret}");
             }
         }
 
+        public IPduManager GetPduManager()
+        {
+            return hakoAsset.GetPduManager();
+        }
+
+        public bool DeclarePduForWrite(string robotName, string pduName)
+        {
+            var srv = hakoAsset.GetHakoCommunicationService();
+            if (srv == null)
+            {
+                return false;
+            }
+            int channel_id = GetPduManager().GetChannelId(robotName, pduName);
+            int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
+            return srv.DeclarePduForWrite(robotName, pduName, channel_id, pdu_size);
+        }
+
+        public bool DeclarePduForRead(string robotName, string pduName)
+        {
+            var srv = hakoAsset.GetHakoCommunicationService();
+            if (srv == null)
+            {
+                return false;
+            }
+            int channel_id = GetPduManager().GetChannelId(robotName, pduName);
+            int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
+            return srv.DeclarePduForRead(robotName, pduName, channel_id, pdu_size);
+        }
     }
 }
