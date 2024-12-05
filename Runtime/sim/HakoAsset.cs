@@ -171,11 +171,21 @@ namespace hakoniwa.sim.core
         public HakoSimState GetState()
         {
             SimulationState state = hakoCommand.GetState();
-            if (Enum.IsDefined(typeof(HakoSimState), state))
+            switch (state)
             {
-                return (HakoSimState)state;
+                case SimulationState.Stopped:
+                    return HakoSimState.Stopped;
+                case SimulationState.Runnable:
+                    return HakoSimState.Runnable;
+                case SimulationState.Running:
+                    return HakoSimState.Running;
+                case SimulationState.Stopping:
+                    return HakoSimState.Stopping;
+                case SimulationState.Terminated:
+                    return HakoSimState.Terminated;
+                default:
+                    return HakoSimState.Terminated;
             }
-            throw new Exception("internal error. enum type is mismatch: SimulationState is not equal HakoState");
         }
 
         public bool SimulationStart()
