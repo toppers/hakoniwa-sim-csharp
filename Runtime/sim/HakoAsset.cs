@@ -143,7 +143,15 @@ namespace hakoniwa.sim.core
                 return false;
             }
             int channel_id = GetPduManager().GetChannelId(robotName, pduName);
+            if (channel_id < 0)
+            {
+                return false;
+            }
             int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
+            if (pdu_size < 0)
+            {
+                return false;
+            }
             return srv.DeclarePduForWrite(robotName, pduName, channel_id, pdu_size);
         }
 
@@ -155,7 +163,15 @@ namespace hakoniwa.sim.core
                 return false;
             }
             int channel_id = GetPduManager().GetChannelId(robotName, pduName);
+            if (channel_id < 0)
+            {
+                return false;
+            }
             int pdu_size = GetPduManager().GetPduSize(robotName, pduName);
+            if (pdu_size < 0)
+            {
+                return false;
+            }
             return srv.DeclarePduForRead(robotName, pduName, channel_id, pdu_size);
         }
     }
