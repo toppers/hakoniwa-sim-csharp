@@ -2,7 +2,7 @@
 
 namespace hakoniwa.sim
 {
-    public enum HakoState
+    public enum HakoSimState
     {
         Stopped = 0,
         Runnable = 1,
@@ -13,7 +13,7 @@ namespace hakoniwa.sim
     public interface IHakoControl
     {
         long GetWorldTime();
-        HakoState GetState();
+        HakoSimState GetState();
         bool SimulationStart();
         bool SimulationStop();
         bool SimulationReset();

@@ -164,12 +164,12 @@ namespace hakoniwa.sim.core
             return hakoCommand.GetWorldTime();
         }
 
-        public HakoState GetState()
+        public HakoSimState GetState()
         {
             SimulationState state = hakoCommand.GetState();
-            if (Enum.IsDefined(typeof(HakoState), state))
+            if (Enum.IsDefined(typeof(HakoSimState), state))
             {
-                return (HakoState)state;
+                return (HakoSimState)state;
             }
             throw new Exception("internal error. enum type is mismatch: SimulationState is not equal HakoState");
         }
