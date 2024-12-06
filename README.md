@@ -110,5 +110,144 @@ https://github.com/user-attachments/assets/be11f5d3-ca4d-40f1-bd30-3198900b9c25
     - [pdu/offset](https://github.com/toppers/hakoniwa-ros2pdu/tree/main/pdu/offset) から必要なものを取得して配置
    
 
+### 箱庭プログラムの作成
+
+あなたのゲームオブジェクトを箱庭シミュレーションとして動作させるには、`IHakoObject` を継承してコールバック関数を実装する必要があります。
+
+```C#
+public interface IHakoObject
+{
+	void EventInitialize ();
+	void EventStart ();
+	void EventStop ();
+	void EventReset ();
+	void EventTick ();
+}
+```
+
+実装例：LiDAR2D センサを箱庭化する場合（[参考](https://github.com/tmori/tutorial-hakoniwa-unity/blob/main/Assets/Scripts/LiDAR2D.cs)）
+
+```C#
+using hakoniwa.sim.core;
+
+namespace hakoniwa.sensors.lidar
+{
+    public class LiDAR2D : MonoBehaviour, IHakoObject
+    {
+        IHakoPdu hakoPdu;
+        public string robotName = "LiDAR2D";
+        public string pduName = "scan";
+
+        public void EventInitialize()
+        {
+            this.sensor = this.gameObject;
+            this.sensorParameters = JsonParser.Load<LiDAR2DSensorParameters>(config_filepath);
+            this.init_angle = this.sensor.transform.localRotation;
+            this.max_count = CalculateDistanceArraySize(sensorParameters.AngleRange);
+            this.distances = new float[max_count];
+            this.update_cycle = CalculateUpdateCycle(Time.fixedDeltaTime, sensorParameters.AngleRange.ScanFrequency);
+            CalculateLaserScanParameters();
+
+            hakoPdu = HakoAsset.GetHakoPdu();
+            var ret = hakoPdu.DeclarePduForWrite(robotName, pduName);
+            if (ret == false)
+            {
+                throw new ArgumentException($"Can not declare pdu for write: {robotName} {pduName}");
+            }
+        }
+        int count = 0;
+        public async void EventTick()
+        {
+            this.count++;
+            if (this.count < this.update_cycle)
+            {
+                return;
+            }
+            this.count = 0;
+
+            var pduManager = hakoPdu.GetPduManager();
+
+            IPdu pdu = pduManager.CreatePdu(robotName, pduName);
+
+            this.Scan();
+            this.SetScanData(pdu);
+            string key = pduManager.WritePdu(robotName, pdu);
+            var ret = await pduManager.FlushPdu(robotName, pduName);
+            Debug.Log("Flush result: " + ret);
+        }
+        private void Scan()
+        {
+            this.sensor.transform.localRotation = this.init_angle;
+            int i = 0;
+            float delta_yaw = this.sensorParameters.AngleRange.Resolution;
+            float start_yaw = this.sensorParameters.AngleRange.Min;
+            if (sensorParameters.AngleRange.AscendingOrderOfData == false)
+            {
+                delta_yaw = -this.sensorParameters.AngleRange.Resolution;
+                start_yaw = this.sensorParameters.AngleRange.Max;
+            }
+            for (float yaw = start_yaw; i < this.max_count; yaw += delta_yaw)
+            {
+                float distance = GetSensorValue(yaw, 0, is_debug);
+                //Debug.Log("v[" + i + "]=" + distances[i]);
+                distances[i] = distance;
+                i++;
+            }
+        }
+        public void SetScanData(IPdu pdu)
+        {
+            LaserScan scan = new LaserScan(pdu);
+
+            //header
+            long t = UtilTime.GetUnixTime();
+            scan.header.stamp.sec = (int)((long)(t / 1000000));
+            scan.header.stamp.nanosec = (uint)((long)(t % 1000000)) * 1000;
+            scan.header.frame_id = this.sensorParameters.frame_id;
+
+            //body
+            scan.angle_min = angle_min;
+            scan.angle_max = angle_max;
+            scan.range_min = range_min;
+            scan.range_max = range_max;
 
 
+            if (sensorParameters.AngleRange.BlindPaddingRange != null)
+            {
+                var values = new float[max_count];
+                for (int i = 0; i < sensorParameters.AngleRange.BlindPaddingRange.Size; i++)
+                {
+                    values[i] = sensorParameters.AngleRange.BlindPaddingRange.Value;
+                }
+                for (int i = sensorParameters.AngleRange.BlindPaddingRange.Size; i < max_count; i++)
+                {
+                    values[i] = distances[i - sensorParameters.AngleRange.BlindPaddingRange.Size];
+                }
+                scan.ranges = values;
+            }
+            else
+            {
+                scan.ranges = distances;
+            }
+            scan.angle_increment = angle_increment;
+            scan.time_increment = time_increment;
+            scan.scan_time = scan_time;
+            scan.intensities = intensities;
+        }
+        public void EventStart()
+        {
+            // nothing to do
+        }
+
+        public void EventStop()
+        {
+            // nothing to do
+        }
+
+        public void EventReset()
+        {
+            this.count = 0;
+        }
+
+    }
+}
+```
