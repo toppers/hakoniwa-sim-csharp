@@ -62,33 +62,53 @@
 
 ## **基本的な使い方**
 
-### 1. **PDU APIのセットアップ**
-Hakoniwa PDU APIを利用して通信の初期化を行います。
+### 箱庭スクリプトのアタッチ
 
-以下は、UnityでのPDU初期化サンプルコードです：
-```csharp
-using Hakoniwa.Core;
+1. あなたのUnityシーンを開き、ヒエラルキービューで、空のゲームオブジェクトを作成します。
+2. 作成したゲームオブジェクトのインスペクタビューから `Add Component`をクリックし、`HakoAsset`と入力して、該当の C# スクリプトをアタッチします。
+3. `AssetName` には、重複しないアセット名を設定します
+4. `Pdu Config Path`には、`custom.json` と ros_typesディレクトリが配置されているディレクトリパスを指定します。デフォルトは、プロジェクト直下であり、`.` です。
 
-void Start()
+https://github.com/user-attachments/assets/be11f5d3-ca4d-40f1-bd30-3198900b9c25
+
+### custom.json の配置
+
+利用する箱庭PDUデータを custom.json として作成してください。
+
+作成例： LaserScan の場合
+
+```json
 {
-    // PDUマネージャの初期化
-    PduManager pdu = PduManager.Create("example_pdu");
-    pdu.SetData(new byte[] { 0x01, 0x02, 0x03 }); // データ送信
+  "robots": [
+    {
+      "name": "LiDAR2D",
+      "rpc_pdu_readers": [],
+      "rpc_pdu_writers": [],
+      "shm_pdu_readers": [],
+      "shm_pdu_writers": [
+        {
+          "type": "sensor_msgs/LaserScan",
+          "org_name": "scan",
+          "name": "LiDAR2D_scan",
+          "channel_id": 0,
+          "pdu_size": 6088
+        }
+      ]
+    }
+  ]
 }
 ```
 
-### 2. **通信プロセスの実行**
-WebSocket通信を有効化し、箱庭のシミュレーションとデータをやり取りします。
+### ros_typesの配置
 
----
+[箱庭PDU管理リポジトリ](https://github.com/toppers/hakoniwa-ros2pdu)から、PDU定義ファイルをダウンロードして、`ros_types` ディレクトリ配下に配置します。
 
-## **サンプルプロジェクト**
-本リポジトリには、以下のサンプルプロジェクトが含まれています：
-1. **基本シーン**: 箱庭とのPDU通信を確認するシンプルなUnityシーン。
-2. **高度な例**: 複雑なPDUデータや時間同期を伴うプロジェクト例。
+- ros_types
+  - json
+    - [pdu/json](https://github.com/toppers/hakoniwa-ros2pdu/tree/main/pdu/json) から必要なものを取得して配置
+  - offset
+    - [pdu/offset](https://github.com/toppers/hakoniwa-ros2pdu/tree/main/pdu/offset) から必要なものを取得して配置
+   
 
-サンプルの使い方：
-```bash
-# サンプルプロジェクトの起動
-$ python run_simulation.py
-```
+
+
