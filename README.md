@@ -119,9 +119,100 @@ public interface IHakoObject
 {
 	void EventInitialize (); /* 初期化処理 */
 	void EventStart (); /* 開始処理 */ 
+	void EventTick (); /* 毎フレームの処理 */
 	void EventStop (); /* 停止処理 */
 	void EventReset (); /* リセット処理 */
-	void EventTick (); /* 毎フレームの処理 */
+}
+```
+
+#### EventInitialize
+
+このコールバック関数は、箱庭のシミュレーション初期化時に１度だけ呼びだされます。
+
+このタイミングで、箱庭PDUデータのI/Oに関する宣言をする必要があります。
+
+```C#
+// PDU I/O 用のオブジェクトを取得
+hakoPdu = HakoAsset.GetHakoPdu();
+// 書き込みするPDU宣言する場合。第一引数は、ロボット名、第二引数はPDU名です。
+hakoPdu.DeclarePduForWrite("myRobot", "sensor1");
+// 読み込みするPDU宣言する場合。第一引数は、ロボット名、第二引数はPDU名です。
+hakoPdu.DeclarePduForWrite("myRobot", "motor");
+```
+#### EventStart, EventStop, EventReset
+
+これらのコールバック関数は、箱庭のシミュレーション開始/停止/リセット時に呼びだされます。
+
+このタイミングで、処理すべきものがあれば実装してください。
+
+#### EventTick
+
+このコールバック関数は、箱庭のシミュレーション・ステップ単位で呼び出されます。
+
+このタイミングで、シミュレーションに必要な処理を行い、PDUデータの読み書きします。
+
+以下は、PDUデータの書き込み処理実装例です。
+
+```C#
+public async void EventTick()
+{
+	//PDU I/O 用のオブジェクトを取得
+	var pduManager = hakoPdu.GetPduManager();
+	//PDUデータを新規作成
+	IPdu pdu = pduManager.CreatePdu(robotName, pduName);
+	//センサデータの情報取得処理
+	this.Scan();
+	//センサデータのPDU設定処理
+	this.SetScanData(pdu);
+	//PDUデータ書き込み
+	pduManager.WritePdu(robotName, pdu);
+	//PDUデータをフラッシュ
+	await pduManager.FlushPdu(robotName, pduName);
+}
+```
+
+PDUデータは、データ型毎にPDUデータアクセサがあります。例えば、LaserScanの場合は以下のようにアクセスできます。
+
+```C#
+public void SetScanData(IPdu pdu)
+{
+    //PDUデータをもとに、PDUデータのアクセサを作成します
+    LaserScan scan = new LaserScan(pdu);
+
+    //header
+    long t = UtilTime.GetUnixTime();
+    scan.header.stamp.sec = (int)((long)(t / 1000000));
+    scan.header.stamp.nanosec = (uint)((long)(t % 1000000)) * 1000;
+    scan.header.frame_id = this.sensorParameters.frame_id;
+
+    //body
+    scan.angle_min = angle_min;
+    scan.angle_max = angle_max;
+    scan.range_min = range_min;
+    scan.range_max = range_max;
+
+
+    if (sensorParameters.AngleRange.BlindPaddingRange != null)
+    {
+        var values = new float[max_count];
+        for (int i = 0; i < sensorParameters.AngleRange.BlindPaddingRange.Size; i++)
+        {
+            values[i] = sensorParameters.AngleRange.BlindPaddingRange.Value;
+        }
+        for (int i = sensorParameters.AngleRange.BlindPaddingRange.Size; i < max_count; i++)
+        {
+            values[i] = distances[i - sensorParameters.AngleRange.BlindPaddingRange.Size];
+        }
+        scan.ranges = values;
+    }
+    else
+    {
+        scan.ranges = distances;
+    }
+    scan.angle_increment = angle_increment;
+    scan.time_increment = time_increment;
+    scan.scan_time = scan_time;
+    scan.intensities = intensities;
 }
 ```
 
