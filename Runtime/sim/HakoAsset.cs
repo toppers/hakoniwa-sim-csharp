@@ -14,10 +14,6 @@ namespace hakoniwa.sim.core
         private string assetName = "UnityAsset";
         [SerializeField]
         private string pduConfigPath = ".";
-        [SerializeField]
-        private bool useConductor = false;
-        [SerializeField]
-        private int maxDelayTimeMsec = 100;
 
         [SerializeField]
         private GameObject[] hakoObjects;
@@ -82,11 +78,6 @@ namespace hakoniwa.sim.core
             }
 
             long delta_time = (long)Math.Round((double)Time.fixedDeltaTime * 1000000.0f);
-            if (useConductor)
-            {
-                HakoConductor.Start((ulong)delta_time, (ulong)maxDelayTimeMsec * 1000);
-            }
-
             hakoAsset = new HakoAssetImpl(assetName, delta_time, pduConfigPath);
             hakoCommand = (IHakoCommand)hakoAsset;
             if (hakoAsset.Initialize(hakoObectList))
@@ -139,10 +130,6 @@ namespace hakoniwa.sim.core
                 bool ret = await hakoAsset.UnRegisterOnHakoniwa();
                 isReady = false;
 
-                if (useConductor)
-                {
-                    HakoConductor.Stop();
-                }
                 Debug.Log($"OK: Unregister from Hakoniwa: {assetName} ret: {ret}");
             }
         }
