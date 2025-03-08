@@ -17,6 +17,7 @@ namespace hakoniwa.sim.core.impl
     {
         private string my_asset_name;
         private string pduConfigPath;
+        private string customJsonFilePath;
         private long asset_time_usec = 0;
         private long delta_time_usec;
         private bool isReady = false;
