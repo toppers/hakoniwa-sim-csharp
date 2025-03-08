@@ -26,11 +26,12 @@ namespace hakoniwa.sim.core.impl
         private IHakoCommunicationService hako_pdu;
 
 
-        public HakoAssetImpl(string asset_name, long d_time_usec, string pdu_config_path)
+        public HakoAssetImpl(string asset_name, long d_time_usec, string pdu_config_path, string custom_json_file_path)
         {
             my_asset_name = asset_name;
             delta_time_usec = d_time_usec;
             pduConfigPath = pdu_config_path;
+            customJsonFilePath = custom_json_file_path;
         }
         public bool Initialize(List<IHakoObject> list)
         {
@@ -47,7 +48,7 @@ namespace hakoniwa.sim.core.impl
                 {
                     throw new Exception("Can not cast IHakoCommunicationService");
                 }
-                pduManager = new PduManager(hako_service, pduConfigPath);
+                pduManager = new PduManager(hako_service, pduConfigPath, customJsonFilePath);
             }
             return isReady;
         }

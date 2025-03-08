@@ -14,6 +14,8 @@ namespace hakoniwa.sim.core
         private string assetName = "UnityAsset";
         [SerializeField]
         private string pduConfigPath = ".";
+        [SerializeField]
+        private string customJsonFilePath = "./custom.json";
 
         [SerializeField]
         private GameObject[] hakoObjects;
@@ -78,7 +80,7 @@ namespace hakoniwa.sim.core
             }
 
             long delta_time = (long)Math.Round((double)Time.fixedDeltaTime * 1000000.0f);
-            hakoAsset = new HakoAssetImpl(assetName, delta_time, pduConfigPath);
+            hakoAsset = new HakoAssetImpl(assetName, delta_time, pduConfigPath, customJsonFilePath);
             hakoCommand = (IHakoCommand)hakoAsset;
             if (hakoAsset.Initialize(hakoObectList))
             {
