@@ -69,6 +69,11 @@ namespace hakoniwa.environment.impl.hako
             var key = (robotName, pduName);
             if (!readers.TryGetValue(key, out pdu_info))
             {
+                bool ret = HakoCppWrapper.asset_create_pdu_lchannel(robotName, channelId, (uint)pduSize);
+                if (ret == false)
+                {
+                    throw new ArgumentException($"Can not create pdu channel!! robotName: {robotName} channel_id: {channelId}");
+                }
                 readers[(robotName, pduName)] = new PduInformation(robotName, pduName, channelId, pduSize);
                 channel_readers[(robotName, channelId)] = readers[(robotName, pduName)];
             }
