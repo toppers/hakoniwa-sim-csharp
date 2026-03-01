@@ -85,6 +85,11 @@ namespace hakoniwa.environment.impl.hako
             return serverURL;
         }
 
+        public string GetPacketVersion()
+        {
+            return "v1";
+        }
+
         public bool IsServiceEnabled()
         {
             return isServiceEnabled;
